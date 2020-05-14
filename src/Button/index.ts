@@ -35,7 +35,6 @@ export class Button {
     });
 
     const compositeList: sharp.OverlayOptions[] = [];
-
     for (const index of this.imageLayers.keys()) {
       const image = this.imageLayers.get(index);
       if (image && image.visible) {
