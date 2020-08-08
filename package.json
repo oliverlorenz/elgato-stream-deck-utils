@@ -16,7 +16,7 @@
     "typescript": "^3.8.3"
   },
   "dependencies": {
-    "elgato-stream-deck": "^3.3.0",
+    "elgato-stream-deck": "^3.3.1",
     "request": "^2.88.2",
     "request-promise-native": "^1.0.8",
     "sharp": "^0.25.2"
