@@ -1,5 +1,6 @@
 import { Layer } from '..';
-import { LayerHandlerInterface, LayerOptions } from './interface';
+import { LayerHandlerInterface } from './interface';
+import { LayerOptions } from '../options';
 
 export class LayerBlinkHandler implements LayerHandlerInterface<boolean> {
   private interval: NodeJS.Timeout | undefined;
@@ -48,7 +49,7 @@ export class LayerBlinkHandler implements LayerHandlerInterface<boolean> {
 
   private setState(state: boolean) {
     this.state = state;
-    this.layer.emitter.emit('BLINKING_CHANGED');
+    this.layer.emitter.emit('BLINKING_CHANGED', this.state);
   }
 
   getState() {
@@ -56,9 +57,12 @@ export class LayerBlinkHandler implements LayerHandlerInterface<boolean> {
   }
 
   onChanged(callback: (options: LayerOptions) => void) {
-    this.layer.emitter.on('BLINKING_CHANGED', () => {
+    this.layer.emitter.on('BLINKING_CHANGED', (state: boolean) => {
       callback({
-        blinking: this.state,
+        layerSize: this.layer.size,
+        handlers: {
+          blinking: this,
+        },
       });
     });
   }

@@ -2,7 +2,6 @@ import { Layer } from '..';
 import { LayerImageHandler } from './image';
 import { EventEmitter } from 'events';
 import { ImageHandler } from '../../ImageHandler';
-import { Button } from '../../Button';
 
 describe(LayerImageHandler.name, () => {
   it('should be able to construct', () => {

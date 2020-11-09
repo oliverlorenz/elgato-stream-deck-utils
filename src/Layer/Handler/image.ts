@@ -1,8 +1,9 @@
 import { Layer } from '..';
-import { LayerHandlerInterface, LayerOptions } from './interface';
+import { LayerHandlerInterface } from './interface';
 // @ts-ignore
 import sharp from 'sharp';
 import { ImageHandler } from '../../ImageHandler';
+import { LayerOptions } from '../options';
 
 export interface TextOptions {
   color?: string;
@@ -18,7 +19,9 @@ export class LayerImageHandler implements LayerHandlerInterface<sharp.Sharp | un
   onChanged(callback: (options: LayerOptions) => void) {
     this.layer.emitter.on('IMAGE_CHANGED', () => {
       callback({
-        image: this.image,
+        handlers: {
+          image: this,
+        },
       });
     });
   }
@@ -72,6 +75,6 @@ export class LayerImageHandler implements LayerHandlerInterface<sharp.Sharp | un
   }
 
   getState() {
-    return !!this.image;
+    return this.image;
   }
 }

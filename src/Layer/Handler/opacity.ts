@@ -1,5 +1,6 @@
 import { Layer } from '..';
-import { LayerHandlerInterface, LayerOptions } from './interface';
+import { LayerHandlerInterface } from './interface';
+import { LayerOptions } from '../options';
 
 export class LayerOpacityHandler implements LayerHandlerInterface<number> {
   private opacity: number;
@@ -40,7 +41,10 @@ export class LayerOpacityHandler implements LayerHandlerInterface<number> {
   onChanged(callback: (options: LayerOptions) => void) {
     this.layer.emitter.on('OPACITY_CHANGED', () => {
       callback({
-        opacity: this.opacity,
+        layerSize: this.layer.size,
+        handlers: {
+          opacity: this,
+        },
       });
     });
   }
