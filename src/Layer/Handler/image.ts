@@ -19,6 +19,7 @@ export class LayerImageHandler implements LayerHandlerInterface<sharp.Sharp | un
   onChanged(callback: (options: LayerOptions) => void) {
     this.layer.emitter.on('IMAGE_CHANGED', () => {
       callback({
+        layerSize: this.layer.size,
         handlers: {
           image: this,
         },
