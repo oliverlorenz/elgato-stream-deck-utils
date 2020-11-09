@@ -1,0 +1,12 @@
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    open-pull-requests-limit: 999
+    versioning-strategy: increase
+    directory: "/"
+    schedule:
+      interval: "daily"
+    allow:
+      - dependency-type: "development"
+      - dependency-name: "gluecode-it*"
+        dependency-type: "production"

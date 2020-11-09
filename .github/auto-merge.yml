@@ -1,0 +1,7 @@
+- match:
+    dependency_name: gluecode-it\/.+
+    dependency_type: all
+    update_type: "semver:minor"
+- match:
+    dependency_type: developement
+    update_type: "semver:minor"

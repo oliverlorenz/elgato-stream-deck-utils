@@ -1,218 +1,145 @@
 import { EventEmitter } from 'events';
 import sharp = require('sharp');
-import { ImageHandler } from '../ImageHandler';
 import { ButtonEventInternal } from './event/internal';
-import { StreamDeck } from 'elgato-stream-deck';
+import { Layer } from '../Layer';
+import { ButtonInterface } from './interface';
+import { ButtonEventDto } from './event/dto';
 
 export interface IImage {
-  sharpInstance: sharp.Sharp;
+  sharpInstance: sharp.Sharp | null;
   visible: boolean;
 }
 
-export class Button {
+enum Event {
+  RENDER = 'RENDER',
+}
 
-  protected imageLayers: Map<number, IImage>;
+export class Button implements ButtonInterface {
+  protected layers: Map<number, Layer>;
   protected emitter: EventEmitter;
+  private renderOnLayerChangeState: boolean;
+  protected keyUpToggleState: boolean = true;
 
-  constructor(
-    protected streamDeck: StreamDeck,
-    readonly buttonIndex: number,
-  ) {
+  constructor(private layerSize: number) {
     this.emitter = new EventEmitter();
-    this.emitter.on(ButtonEventInternal.RENDER, this.render.bind(this));
+    this.emitter.on(ButtonEventInternal.RENDER, this.render);
 
-    this.imageLayers = new Map<number, IImage>();
+    this.layers = new Map<number, Layer>();
+    this.renderOnLayerChangeState = true;
   }
 
-  public async render() {
+  emitKeyUp(dto: ButtonEventDto) {
+    this.emitter.emit(ButtonEventInternal.INTERNAL_KEY_UP, dto);
+  }
+
+  emitKeyDown(dto: ButtonEventDto) {
+    this.emitter.emit(ButtonEventInternal.INTERNAL_KEY_DOWN, dto);
+  }
+
+  public layer(layerIndex: number): Layer {
+    if (!this.layers.has(layerIndex)) {
+      const newLayer = new Layer({ layerSize: this.layerSize });
+      this.layers.set(layerIndex, newLayer);
+      newLayer.onChanged(() => {
+        if (this.renderOnLayerChangeState) {
+          this.render();
+        }
+      });
+    }
+    return this.layers.get(layerIndex) as Layer;
+  }
+
+  public renderOnLayerChange(state: boolean = true): Button {
+    this.renderOnLayerChangeState = state;
+    return this;
+  }
+
+  private async render() {
     const baseImage = sharp({
       create: {
-        width: this.streamDeck.ICON_SIZE,
-        height: this.streamDeck.ICON_SIZE,
+        width: this.layerSize,
+        height: this.layerSize,
         channels: 4,
         background: { r: 0, g: 0, b: 0, alpha: 0 },
       },
     });
 
     const compositeList: sharp.OverlayOptions[] = [];
-    for (const index of this.imageLayers.keys()) {
-      const image = this.imageLayers.get(index);
-      if (image && image.visible) {
+    for (const [, layer] of this.layers) {
+      if (layer.image.hasImageData() && layer.opacity.isVisible()) {
         compositeList.push({
-          input: await image.sharpInstance.toBuffer(),
+          input: await layer.image.getImageData()?.toBuffer(),
           gravity: 'centre',
         });
       }
     }
 
-    const composedImage = await baseImage.composite(compositeList)
+    const composedImage = await baseImage
+      .composite(compositeList)
       .removeAlpha()
       .flatten()
       .toBuffer();
 
-    this.streamDeck.fillImage(
-       this.buttonIndex,
-       composedImage,
-    );
+    // this.streamDeck.fillImage(this.buttonIndex, composedImage);
+    this.emitRender(composedImage);
   }
 
-  public async setImageFromWeb(
-    imageLayerIndex: number,
-    url: string,
-  ) {
-    const rawImageBuffer = await ImageHandler.getImageFromWeb(url);
-    return this.setImage(imageLayerIndex, rawImageBuffer);
+  private emitRender(composedImage: Buffer) {
+    this.emitter.emit(Event.RENDER, composedImage);
   }
 
-  public async clearImage(
-    imageLayerIndex: number
-  ) {
-    this.imageLayers.delete(imageLayerIndex);
-    return Promise.resolve();
-  }
-
-  public async setImage(
-    imageLayerIndex: number,
-    content: sharp.SharpOptions | undefined | String | Buffer,
-    visible: boolean = true,
-  ) {
-    this.imageLayers.set(
-      imageLayerIndex,
-      {
-        visible,
-        sharpInstance: sharp(content as sharp.SharpOptions | undefined)
-          .resize(this.streamDeck.ICON_SIZE, this.streamDeck.ICON_SIZE),
-      },
-    );
-    return Promise.resolve();
-  }
-
-  public async setColor(
-    displayLevel: number,
-    r: number,
-    g: number,
-    b: number,
-    alpha: number = 1,
-  ) {
-    this.setImage(
-      displayLevel,
-      Buffer.from(
-        `<svg viewBox="0 0 ${this.streamDeck.ICON_SIZE} ${this.streamDeck.ICON_SIZE}">
-          <rect width="100%" height="100%" fill="rgb(${r},${g},${b},${alpha})"/>
-        </svg>`,
-      ),
-      alpha !== 0,
-    );
-  }
-
-  public setLayerVisibility(imageLayerIndex: number, visible: boolean) {
-    const layerContent = this.imageLayers.get(imageLayerIndex);
-    if (!layerContent) return;
-    layerContent.visible = visible;
-    this.imageLayers.set(imageLayerIndex, layerContent);
-  }
-
-  public toggleLayerVisibility(imageLayerIndex: number) {
-    const layerContent = this.imageLayers.get(imageLayerIndex);
-    if (!layerContent) return Promise.resolve();
-
-    layerContent.visible = !layerContent.visible;
-    this.imageLayers.set(imageLayerIndex, layerContent);
-    return Promise.resolve();
-  }
-
-  public blink(
-    imageLayerIndex: number,
-    time: number,
-  ): number {
-    return setInterval(
-      async () => {
-        await this.toggleLayerVisibility(imageLayerIndex);
-        this.render();
-      },
-      time,
-    ) as unknown as number;
-  }
-
-  public onKeyDown(callback: (button: Button) => void) {
-    this.emitter.on(
-      ButtonEventInternal.INTERNAL_KEY_DOWN.toString(),
-      () => {
-        callback(this);
-      },
-    );
-  }
-
-  public onceKeyDown(callback: (buttce: Button) => void) {
-    this.emitter.once(
-      ButtonEventInternal.INTERNAL_KEY_DOWN.toString(),
-      () => {
-        callback(this);
-      },
-    );
-  }
-
-  public onKeyUp(callback: (button: Button) => void) {
-    const event = ButtonEventInternal.INTERNAL_KEY_UP.toString();
-    function handler() {
-      // @ts-ignore
-      callback(this);
-    }
-    this.emitter.on(
-      event,
-      handler.bind(this),
-    );
+  public onKeyDown(callback: (dto: ButtonEventDto) => void) {
+    const event = ButtonEventInternal.INTERNAL_KEY_DOWN.toString();
+    this.emitter.on(event, callback);
     return () => {
-      this.emitter.removeListener(event, handler);
+      this.emitter.removeListener(event, callback);
     };
   }
 
-  public onceKeyUp(callback: (button: Button) => void) {
-    this.emitter.once(
-      ButtonEventInternal.INTERNAL_KEY_UP.toString(),
-      () => {
-        callback(this);
-      },
-    );
+  public onceKeyDown(callback: (buttce: Button) => void) {
+    this.emitter.once(ButtonEventInternal.INTERNAL_KEY_DOWN.toString(), () => {
+      callback(this);
+    });
   }
 
-  public async setText(
-    imageLayerIndex: number,
-    text: string,
-  ) {
-    return this.setImage(
-      imageLayerIndex,
-      Buffer.from(
-        `<svg width="${this.streamDeck.ICON_SIZE}" height="${this.streamDeck.ICON_SIZE}">
-           <text x="50%" y="50%" font-size="30" dominant-baseline="middle" text-anchor="middle">${text}</text>
-         </svg>`,
-      ),
-    );
+  public onKeyUp(callback: (dto: ButtonEventDto) => void): () => void {
+    const event = ButtonEventInternal.INTERNAL_KEY_UP.toString();
+    this.emitter.on(event, callback);
+    return () => {
+      this.emitter.removeListener(event, callback);
+    };
   }
 
-  public pulseColor(
-    imageLayerIndex: 0,
-    r: number,
-    g: number,
-    b: number,
-    ms: number,
-    render: boolean = true,
-  ) {
-    let counter: number = 0;
-    setInterval(
-      async () => {
-        counter = counter + 0.1;
-        await this.setColor(
-          imageLayerIndex,
-          Math.sin(counter) * (r / 2) + (r / 2),
-          Math.sin(counter) * (g / 2) + (g / 2),
-          Math.sin(counter) * (b / 2) + (b / 2),
-        );
-        if (render) {
-          this.render();
-        }
-      },
-      ms,
-    );
+  public onKeyUpToggle(startCallback: () => void, stopCallback: () => void): () => void {
+    return this.onKeyUp(() => {
+      if (this.keyUpToggleState) {
+        startCallback();
+      } else {
+        stopCallback();
+      }
+      this.keyUpToggleState = !this.keyUpToggleState;
+    });
+  }
+
+  onRender(handler: (composedImage: Buffer) => void) {
+    this.emitter.on(Event.RENDER, composedImage => {
+      handler(composedImage);
+    });
+  }
+
+  public onceKeyUp(callback: (dto: ButtonEventDto) => void) {
+    this.emitter.once(ButtonEventInternal.INTERNAL_KEY_UP.toString(), (dto: ButtonEventDto) => {
+      callback(dto);
+    });
+  }
+
+  activate() {
+    this.keyUpToggleState = true;
+    this.render();
+  }
+
+  deactivate(): void {
+    this.layers.clear();
+    this.render();
   }
 }

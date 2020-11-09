@@ -1,20 +1,17 @@
 {
   "compilerOptions": {
-    "outDir": "dist",
     "target": "es6",
-    "declaration": true,
     "module": "commonjs",
-    "esModuleInterop": true,
-    "moduleResolution": "node",
     "skipLibCheck": true,
+    "outDir": "./dist",
+    "moduleResolution": "node",
+    "declaration": true,
     "strict": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "noUnusedLocals": true,
-    "declarationMap": true,
     "pretty": true,
-    "lib": [
-      "esnext"
-    ]
+    "lib": ["esnext"],
+    "esModuleInterop": true
   }
 }

@@ -1,0 +1,1 @@
+type ImageLayerIndex = number | null;
