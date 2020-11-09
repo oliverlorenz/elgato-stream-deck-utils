@@ -1,7 +1,8 @@
 name: Release
 'on':
-  pull_request:
-    types: [opened, edited, reopened, synchronize]
+  push:
+    branches:
+      - master
 jobs:
   release:
     name: Release
@@ -10,10 +11,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v1
       - name: Install Dependencies
-        run: |
-          export DEBIAN_FRONTEND=noninteractive
-          sudo apt-get clean && sudo apt-get update
-          sudo apt-get install -y build-essential git gcc-4.8 g++-4.8 && export CXX=g++-4.8 libusb-1.0-0 libusb-1.0-0-dev libudev-dev
+        run: sudo apt-get clean && sudo apt-get update && sudo apt-get install -y build-essential git gcc-4.8 g++-4.8 && export CXX=g++-4.8 libusb-1.0-0 libusb-1.0-0-dev libudev-dev
       - name: Setup Node.js
         uses: actions/setup-node@v1
         with:
