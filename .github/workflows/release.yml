@@ -1,8 +1,7 @@
 name: Release
 'on':
-  push:
-    branches:
-      - master
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
 jobs:
   release:
     name: Release
@@ -14,7 +13,7 @@ jobs:
         run: |
           export DEBIAN_FRONTEND=noninteractive
           sudo apt-get clean && sudo apt-get update
-          sudo apt-get install -y libudev-dev
+          sudo apt-get install -y libusb-1.0-dev libudev-1.0dev
       - name: Setup Node.js
         uses: actions/setup-node@v1
         with:
@@ -23,8 +22,7 @@ jobs:
         run: npm install
       - name: Run Jest
         run: npm test
-      - name: 'Release with semantic release'
-        uses: cycjimmy/semantic-release-action@v2
-        env:
-          GITHUB_TOKEN: '${{ secrets.GITHUB_TOKEN }}'
-          NPM_TOKEN: '${{ secrets.NPM_TOKEN_NPMJS }}'
+      - uses: ahmadnassri/action-dependabot-auto-merge@v2
+        with:
+          target: minor
+          github-token: ${{ secrets.GH_PAT }}
