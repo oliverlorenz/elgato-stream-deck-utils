@@ -8,10 +8,13 @@ jobs:
     name: Release
     runs-on: ubuntu-18.04
     steps:
-      - name: install libs
-        run: sudo apt update && sudo apt install -y libusb-1.0-dev
       - name: Checkout
         uses: actions/checkout@v1
+      - name: Install Dependencies
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          sudo apt-get clean && sudo apt-get update
+          sudo apt-get install -y libudev-dev
       - name: Setup Node.js
         uses: actions/setup-node@v1
         with:
