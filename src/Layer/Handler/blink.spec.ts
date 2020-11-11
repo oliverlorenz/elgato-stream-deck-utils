@@ -37,6 +37,7 @@ describe(LayerBlinkHandler.name, () => {
         opacity: {
           toggle: jest.fn(),
           visible: jest.fn(),
+          invisible: jest.fn(),
         },
         emitter: new EventEmitter(),
       } as unknown) as Layer;
@@ -44,6 +45,7 @@ describe(LayerBlinkHandler.name, () => {
       expect(handler.start(6)).toBeTruthy();
       expect(handler.start(6)).toBeFalsy();
       expect(layer.opacity.visible).toBeCalledTimes(1);
+      handler.stop();
     });
   });
 
@@ -109,6 +111,9 @@ describe(LayerBlinkHandler.name, () => {
       handler.interval = setInterval(() => {}, 0);
       handler.toggle();
       expect(handler.stop).toBeCalledTimes(1);
+      handler.stop();
+      // @ts-ignore
+      clearInterval(handler.interval);
     });
   });
 
@@ -125,6 +130,7 @@ describe(LayerBlinkHandler.name, () => {
       const handler = new LayerBlinkHandler(layer);
       handler.start(1000);
       expect(handler.getState()).toBeTruthy();
+      handler.stop();
     });
     it('should return false if handler is stopped', done => {
       const layer = ({
@@ -156,7 +162,10 @@ describe(LayerBlinkHandler.name, () => {
         emitter: new EventEmitter(),
       } as unknown) as Layer;
       const handler = new LayerBlinkHandler(layer);
-      handler.onStarted(done);
+      handler.onStarted(() => {
+        handler.stop();
+        done();
+      });
       handler.start(1000);
     });
   });
