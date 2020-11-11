@@ -5,6 +5,7 @@
   "main": "dist/index.js",
   "scripts": {
     "start": "node dist/index.js",
+    "prepublish": "tsc",
     "test": "jest --coverage",
     "posttest": "npm run format",
     "dev:test": "jest --coverage --coverage-reporters html --watch-all",
