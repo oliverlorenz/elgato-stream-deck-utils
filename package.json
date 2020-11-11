@@ -50,6 +50,9 @@
     "toggl-api": "^1.0.1",
     "usb": "^1.6.3"
   },
+  "publishConfig": {
+    "access": "public"
+  },
   "husky": {
     "hooks": {
       "commit-msg": "commitlint -E HUSKY_GIT_PARAMS",
