@@ -10,6 +10,8 @@ export interface TextOptions {
   size?: number;
   posX?: string;
   posY?: string;
+  textAnchor?: 'start' | 'middle' | 'end';
+  dominantBaseline?: 'central' | 'middle' | 'text-top';
 }
 
 export class LayerImageHandler implements LayerHandlerInterface<sharp.Sharp | undefined> {
@@ -47,11 +49,13 @@ export class LayerImageHandler implements LayerHandlerInterface<sharp.Sharp | un
     return this.setImage(
       Buffer.from(
         `<svg width="${this.layer.size}" height="${this.layer.size}">
-           <text x="${options?.posX ? options.posX : '50%'}" y="${
-          options?.posY ? options.posY : '50%'
-        }" ${options?.size ? 'font-size="' + options.size + '"' : ''} ${
-          options?.color ? 'fill="' + options.color + '"' : ''
-        } alignment-baseline="bottom" text-anchor="middle">${text}</text>
+           <text text-anchor="${options?.textAnchor ? options.textAnchor : 'middle'}" x="${
+          options?.posX ? options.posX : '50%'
+        }" y="${options?.posY ? options.posY : '50%'}" ${
+          options?.size ? 'font-size="' + options.size + '"' : ''
+        } ${options?.color ? 'fill="' + options.color + '"' : ''} dominant-baseline="${
+          options?.dominantBaseline ? options.dominantBaseline : 'middle'
+        }" text-anchor="middle">${text}</text>
          </svg>`,
       ),
     );
