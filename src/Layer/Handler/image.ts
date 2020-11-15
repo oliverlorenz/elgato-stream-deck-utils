@@ -55,7 +55,7 @@ export class LayerImageHandler implements LayerHandlerInterface<sharp.Sharp | un
           options?.size ? 'font-size="' + options.size + '"' : ''
         } ${options?.color ? 'fill="' + options.color + '"' : ''} dominant-baseline="${
           options?.dominantBaseline ? options.dominantBaseline : 'middle'
-        }" text-anchor="middle">${text}</text>
+        }">${text}</text>
          </svg>`,
       ),
     );
